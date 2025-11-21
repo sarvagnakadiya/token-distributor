@@ -1,5 +1,5 @@
 ```shell
-forge script script/TokenDistributor.s.sol:TokenDistributorScript \
+forge script script/TokenDistributor.s.sol:CrewDistributorScript \
     --rpc-url ${RPC_URL} \
     --private-key ${PRIVATE_KEY} \
     --broadcast \
@@ -7,4 +7,9 @@ forge script script/TokenDistributor.s.sol:TokenDistributorScript \
     --etherscan-api-key ${ETHERSCAN_API_KEY} \
     -vvvv
 ```
-deployed contract: [0xb560B493b7677DfA7d494dbddcC8471897164218](https://basescan.org/address/0xb560B493b7677DfA7d494dbddcC8471897164218)
+
+```shell
+0xC56F2E13837E37c2325FDD57e613031C28c03cb3
+```
+basescan: [0xC56F2E13837E37c2325FDD57e613031C28c03cb3](https://basescan.org/address/0xC56F2E13837E37c2325FDD57e613031C28c03cb3)
+
