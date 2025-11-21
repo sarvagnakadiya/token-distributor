@@ -44,25 +44,33 @@ contract TokenDistributor is Ownable {
         address _token,
         address _distributor,
         address[] calldata _recipients,
-        uint256 _amountEach
+        uint256 _totalAmount
     ) external onlyAdmin {
         uint256 length = _recipients.length;
         if (length == 0) revert InvalidRecipients();
 
-        uint256 totalDistribution = _amountEach * length;
+        // Calculate fee (1%) from total amount
+        uint256 feeAmount = (_totalAmount * 100) / 10000;
 
-        // Calculate fee (fixed 1%)
-        uint256 feeAmount = (totalDistribution * 100) / 10000;
-        uint256 totalRequired = totalDistribution + feeAmount;
+        // Amount available for distribution after fee
+        uint256 amountAfterFee = _totalAmount - feeAmount;
+
+        // Calculate amount per recipient (floor division)
+        uint256 amountEach = amountAfterFee / length;
+        uint256 totalDistribution = amountEach * length;
+
+        // Dust from floor division (goes to owner)
+        uint256 dust = amountAfterFee - totalDistribution;
 
         IERC20 token = IERC20(_token);
 
-        if (token.balanceOf(_distributor) < totalRequired)
+        // User only needs to provide exactly _totalAmount
+        if (token.balanceOf(_distributor) < _totalAmount)
             revert InsufficientBalance();
-        if (token.allowance(_distributor, address(this)) < totalRequired)
+        if (token.allowance(_distributor, address(this)) < _totalAmount)
             revert InsufficientAllowance();
 
-        // Transfer fee to fee recipient first
+        // Transfer fee to owner first
         if (!token.transferFrom(_distributor, owner(), feeAmount)) {
             revert DistributionFailed();
         }
@@ -73,7 +81,7 @@ contract TokenDistributor is Ownable {
             address recipient = _recipients[i];
             if (recipient == address(0)) revert InvalidRecipients();
 
-            if (!token.transferFrom(_distributor, recipient, _amountEach)) {
+            if (!token.transferFrom(_distributor, recipient, amountEach)) {
                 revert DistributionFailed();
             }
 
@@ -82,11 +90,19 @@ contract TokenDistributor is Ownable {
                 ++i;
             }
         }
+
+        // Transfer dust to owner (remainder from floor division)
+        if (dust > 0) {
+            if (!token.transferFrom(_distributor, owner(), dust)) {
+                revert DistributionFailed();
+            }
+        }
+
         emit TokensDistributed(
             _token,
             _distributor,
             length,
-            _amountEach,
+            amountEach,
             totalDistribution,
             feeAmount
         );
